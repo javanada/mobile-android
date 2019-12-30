@@ -25,6 +25,7 @@ import org.json.simple.JSONObject;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
@@ -231,9 +232,31 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             locationMap.objects.clear();
             locationMap.edges.clear();
             locationMap.shortestPath.clear();
-
             fromOptions.clear();
             toOptions.clear();
+
+            LocationMapCacheItem item = new LocationMapCacheItem();
+            if (locationMap.locationCache == null) {
+                locationMap.locationCache = new HashMap<>();
+            } else {
+                if (locationMap.locationCache.containsKey(strings[0])) {
+                    LocationMapCacheItem cacheItem = locationMap.locationCache.get(strings[0]);
+                    for (LocationObject locationObject : cacheItem.objects) {
+                        locationMap.objects.add(locationObject);
+                        StringWithTag stringWithTag = new StringWithTag(locationObject.getShort_name(), locationObject.getObject_id());
+                        fromOptions.add(stringWithTag);
+                        toOptions.add(stringWithTag);
+                    }
+                    for (Edge edge : cacheItem.edges) {
+                        locationMap.edges.add(edge);
+                    }
+                    locationMap.canvas_image = cacheItem.canvas_image;
+                    return "success";
+                }
+            }
+            locationMap.locationCache.put(strings[0], item);
+
+
 
             Log.i("!!!", "strings[0]: " + strings[0]);
 
@@ -256,9 +279,16 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
                     JSONObject j2 = (JSONObject) jsonObject.get("location");
                     Log.i("!!! j2", j2.toJSONString());
                     locationMap.canvas_image = j2.get("canvas_image").toString();
+                    item.canvas_image = locationMap.canvas_image;
                 }
             }
             publishProgress(count++);
+
+            item.objects = new ArrayList<>();
+            for (LocationObject locationObject : locationMap.objects) {
+                item.objects.add(locationObject);
+            }
+
 
 
             JSONArray arr2 = INavClient.get("edges/location/" + strings[0]);
@@ -275,6 +305,10 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
                 }
             }
             publishProgress(count++);
+            item.edges = new ArrayList<>();
+            for (Edge edge : locationMap.edges) {
+                item.edges.add(edge);
+            }
 
             return "success";
         }

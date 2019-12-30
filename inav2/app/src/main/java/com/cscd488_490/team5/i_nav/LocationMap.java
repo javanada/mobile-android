@@ -11,7 +11,9 @@ import android.util.AttributeSet;
 
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Observable;
 
 import i_nav.Edge;
@@ -24,6 +26,9 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
     List<Edge> edges;
     List<Edge> shortestPath;
     String canvas_image;
+
+    Map<String, LocationMapCacheItem> locationCache = new HashMap<>();
+    Map<String, PathCacheItem> pathCache = new HashMap<>();
 
     int primaryX;
     int primaryY;
