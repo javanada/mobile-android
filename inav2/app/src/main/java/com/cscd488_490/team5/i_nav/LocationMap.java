@@ -2,6 +2,7 @@ package com.cscd488_490.team5.i_nav;
 
 import android.animation.TimeAnimator;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -58,6 +59,8 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
     TimeAnimator mTimer;
     private long mLastTime;
 
+    Map<String, Bitmap> objectTypes;
+
     @Override
     public void onTimeUpdate(TimeAnimator timeAnimator, long l, long l1) {
         long now = System.currentTimeMillis();
@@ -97,6 +100,7 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
         edges = new ArrayList<Edge>();
         objects = new ArrayList<LocationObject>();
 //        mTimer.start();
+        objectTypes = new HashMap<>();
     }
 
     public MyObservable getMyObservable() {
@@ -203,11 +207,20 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
 //            int i = (findViewById(R.id.linearLayoutId)).getWidth() - this.currentWidth;
             int x = o.getImage_x() + (currentWidth - imageWidth) / 2;
             int y = this.currentHeight - o.getImage_y();
-            canvas.drawCircle(x, y, 10, paint);
+
+            int c = paint.getColor();
 
             paint.setColor(Color.BLACK);
             paint.setTextSize(20);
             canvas.drawText("#" + o.getObject_id(), x + 10, y, paint);
+
+            if (objectTypes.containsKey("" + o.getObject_type_id())) {
+                canvas.drawBitmap(objectTypes.get("" + o.getObject_type_id()), x - 5, y, paint);
+            } else {
+                paint.setColor(c);
+                canvas.drawCircle(x, y, 10, paint);
+            }
+
         }
 
         double x_scale = 1;

@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.media.ThumbnailUtils;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -23,10 +24,13 @@ import android.widget.Toast;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -46,6 +50,8 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
     ArrayAdapter<StringWithTag> dataAdapter;
     ArrayAdapter<StringWithTag> dataAdapterFrom;
     ArrayAdapter<StringWithTag> dataAdapterTo;
+
+
 
     private ProgressBar progressBar;
     Integer count = 1;
@@ -90,6 +96,8 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
         progressBar.setVisibility(View.VISIBLE);
         progressBar.setProgress(0);
+
+
 
         new MyTaskLocations().execute("1");
     }
@@ -269,6 +277,21 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
             for (Object obj : arr) {
                 JSONObject jsonObject = (JSONObject) obj;
+                if (jsonObject.get("object_type") != null) {
+                    JSONObject jsonObjectType = ((JSONObject)jsonObject.get("object_type"));
+                    if (jsonObjectType.get("image") != null && !locationMap.objectTypes.containsKey(jsonObjectType.get("object_type_id").toString())) {
+                        String image = jsonObjectType.get("image").toString();
+                        Log.i("!!!", "CREATING BITMAP...........");
+                        try {
+                            URL url = new URL(image);
+                            Bitmap bmp = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+                            Bitmap bmp2 = ThumbnailUtils.extractThumbnail(bmp, 25, 25);
+                            locationMap.objectTypes.put(jsonObjectType.get("object_type_id").toString(), bmp2);
+                        } catch(IOException e) {
+                            System.out.println(e);
+                        }
+                    }
+                }
                 LocationObject o = new LocationObject(jsonObject);
                 locationMap.objects.add(o);
                 StringWithTag stringWithTag = new StringWithTag(o.getShort_name(), o.getObject_id());
