@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
     ArrayAdapter<StringWithTag> dataAdapterFrom;
     ArrayAdapter<StringWithTag> dataAdapterTo;
 
-
+    String currentLocation = "1";
 
     private ProgressBar progressBar;
     Integer count = 1;
@@ -62,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
         setContentView(R.layout.activity_main);
 
         locationMap = (LocationMap) findViewById(R.id.locationMap);
+
         locationMap.getMyObservable().addObserver(this);
 
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
@@ -111,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             Object tag = ((StringWithTag) parent.getItemAtPosition(position)).tag;
 
             // Showing selected spinner item
-            Toast.makeText(parent.getContext(), "Selected: " + item, Toast.LENGTH_SHORT).show();
+//            Toast.makeText(parent.getContext(), "Selected: " + item, Toast.LENGTH_SHORT).show();
 
             //        Log.i("!!!", "" + view.getId() + " " + (parent.getId() == R.id.spinner) + " parent: " + parent.getId());
             if (parent.getId() == R.id.spinner) {
@@ -120,7 +121,9 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
                 progressBar.setVisibility(View.VISIBLE);
                 progressBar.setProgress(0);
 
+                currentLocation = tag.toString();
                 new MyTask().execute(tag.toString());
+
             }
         } catch (Exception e) {
             Log.e("!!!", "Error: " + e.getMessage());
@@ -151,8 +154,11 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
     @Override
     public void update(Observable o, Object arg) {
-        ((TextView) findViewById(R.id.textView)).setText(arg.toString());
+        String details = (locationMap.locationCache.containsKey("" + currentLocation) && locationMap.locationCache.get("" + currentLocation).location != null) ? locationMap.locationCache.get("" + currentLocation).location.getLong_name() : "";
+//        ((TextView) findViewById(R.id.textView)).setText(arg.toString());
+        ((TextView) findViewById(R.id.textView)).setText(details + " - " + arg.toString());
     }
+
 
     public void onDirectionsMapClick(View view) {
         Spinner spinnerFrom = (Spinner)findViewById(R.id.from_spinner);
@@ -179,6 +185,14 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
         startActivityForResult(intent,  1);
     }
 
+    public void printCache(View view) {
+        for (String s : locationMap.locationCache.keySet()) {
+            LocationMapCacheItem item = locationMap.locationCache.get(s);
+            Log.i("&&&", "key: " + s + " item: " + item.toString());
+        }
+
+    }
+
     public class MyTaskLocations extends AsyncTask<String, Integer, String> {
 
         //Constructor
@@ -196,6 +210,14 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
                 Location location = new Location(jsonObject);
                 StringWithTag stringWithTag = new StringWithTag(location.getShort_name(), location.getLocation_id());
                 locationOptions.add(stringWithTag);
+
+
+                if (locationMap.locationCache.containsKey("" + location.getLocation_id())) {
+                    locationMap.locationCache.get("" + location.getLocation_id()).location = location;
+                } else {
+                    locationMap.locationCache.put("" + location.getLocation_id(), new LocationMapCacheItem());
+                    locationMap.locationCache.get("" + location.getLocation_id()).location = location;
+                }
             }
             publishProgress(count++);
 
@@ -247,14 +269,16 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             if (locationMap.locationCache == null) {
                 locationMap.locationCache = new HashMap<>();
             } else {
-                if (locationMap.locationCache.containsKey(strings[0])) {
+                if (locationMap.locationCache.containsKey(strings[0]) && locationMap.locationCache.get(strings[0]).objects != null) {
                     LocationMapCacheItem cacheItem = locationMap.locationCache.get(strings[0]);
+
                     for (LocationObject locationObject : cacheItem.objects) {
                         locationMap.objects.add(locationObject);
                         StringWithTag stringWithTag = new StringWithTag(locationObject.getShort_name(), locationObject.getObject_id());
                         fromOptions.add(stringWithTag);
                         toOptions.add(stringWithTag);
                     }
+
                     for (Edge edge : cacheItem.edges) {
                         locationMap.edges.add(edge);
                     }
@@ -262,8 +286,9 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
                     return "success";
                 }
             }
-            locationMap.locationCache.put(strings[0], item);
-
+            if (!locationMap.locationCache.containsKey(strings[0])) {
+                locationMap.locationCache.put(strings[0], item);
+            }
 
 
             Log.i("!!!", "strings[0]: " + strings[0]);
@@ -381,16 +406,80 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             JSONArray arr2 = INavClient.get("path/shortest-source-dest/?source_object_id=" + strings[0] + "&dest_object_id=" + strings[1]);
             System.out.println("!!! arr2: " + arr2);
 
+            HashMap<String, LocationObject> allObjects = new HashMap<String, LocationObject>();
+            for (LocationObject locationObject : locationMap.objects) {
+                allObjects.put("" + locationObject.getObject_id(), locationObject);
+            }
+
             locationMap.shortestPath = new ArrayList<Edge>();
-            for (Object obj : arr2) {
+            for (int i = 0; i < arr2.size(); i++) {// (Object obj : arr2) {
+                Object obj = arr2.get(i);
                 JSONObject jsonObject = (JSONObject) obj;
                 if (jsonObject.get("v1") != null) {
-                    LocationObjectVertex v1 = new LocationObjectVertex((JSONObject)jsonObject.get("v1"));
-                    LocationObjectVertex v2 = new LocationObjectVertex((JSONObject)jsonObject.get("v2"));
+                    LocationObjectVertex v1 = new LocationObjectVertex((JSONObject) jsonObject.get("v1"));
+                    LocationObjectVertex v2 = new LocationObjectVertex((JSONObject) jsonObject.get("v2"));
                     int weight = Integer.parseInt(jsonObject.get("weight").toString());
                     String step = jsonObject.get("directions") != null ? jsonObject.get("directions").toString() : "";
                     Edge e = new Edge(v1, v2, weight);
-                    e.setStep(step);
+
+                    double deltaY = (e.v2().getY() - e.v1().getY());
+                    double deltaX = (e.v2().getX() - e.v1().getX());
+                    double dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+                    String from = "";
+                    if (allObjects.containsKey("" + e.v1().getObject_id())) {
+                        from = allObjects.get("" + e.v1().getObject_id()).getShort_name() + "#" + e.v1().getObject_id();
+                    } else {
+                        from = "" + e.v1().getObject_id();
+                    }
+                    String to = "";
+                    if (allObjects.containsKey("" + e.v2().getObject_id())) {
+                        to = allObjects.get("" + e.v2().getObject_id()).getShort_name() + "#" + e.v2().getObject_id();
+                    } else {
+                        to = "" + e.v2().getObject_id();
+                    }
+                    double angle = Math.atan(deltaY / deltaX);
+                    angle = angle * (180 / Math.PI);
+                    angle = Math.round(angle);
+
+                    String direction = "";
+
+                    if (deltaX > 0 && deltaY > 0) { // quadrant 1
+                        direction = "NE";
+                        angle = Math.abs(angle);
+                    } else if (deltaX < 0 && deltaY > 0) { // quadrant 2
+                        direction = "NW";
+                        angle = Math.abs(angle) + 270;
+                    } else if (deltaX < 0 && deltaY < 0) { // quadrant 3
+                        direction = "SW";
+                        angle = Math.abs(angle) + 180;
+                    } else if (deltaX > 0 && deltaY < 0) { // quadrant 4
+                        direction = "SE";
+                        angle = Math.abs(angle) + 90;
+                    } else if (deltaX == 0 && deltaY > 0) { // N
+                        direction = "N";
+                    } else if (deltaX == 0 && deltaY < 0) { // S
+                        direction = "S";
+                    } else if (deltaX > 0 && deltaY == 0) { // E
+                        direction = "E";
+                    } else if (deltaX < 0 && deltaY == 0) { // W
+                        direction = "W";
+                    }
+
+
+                    Log.i("###", "v1: " + e.v1().getX() + ", " + e.v1().getY() + "    v2: " + e.v2().getX() + ", " + e.v2().getY());
+
+                    String str = "Walk " + angle + " deg (" + direction + ") " +  Math.round(dist) + " ft. ";
+
+                    if (i == arr2.size() - 1) {
+                        str += "from " + from + ". Arrive at your destination, " + to + "";
+                    } else {
+                        str += "from " + from + " to " + to + "";
+                        str += ", turn";
+                    }
+                    str += ".";
+
+                    e.setStep(str);
                     locationMap.shortestPath.add(e);
                 }
             }

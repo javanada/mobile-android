@@ -114,6 +114,13 @@
                 android:enabled="false"
                 android:onClick="onDirectionsListClick"
                 android:text="Directions (List)" />
+            <Button
+                android:id="@+id/buttonPrintCache"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:enabled="true"
+                android:onClick="printCache"
+                android:text="Cache (Debug)" />
 
         </LinearLayout>
     </ScrollView>

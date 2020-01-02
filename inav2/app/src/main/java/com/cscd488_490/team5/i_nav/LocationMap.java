@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Observable;
 
 import i_nav.Edge;
+import i_nav.Location;
 import i_nav.LocationObject;
 
 public class LocationMap extends AppCompatImageView implements TimeAnimator.TimeListener {
@@ -27,6 +28,7 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
     List<Edge> edges;
     List<Edge> shortestPath;
     String canvas_image;
+
 
     Map<String, LocationMapCacheItem> locationCache = new HashMap<>();
     Map<String, PathCacheItem> pathCache = new HashMap<>();
@@ -101,6 +103,7 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
         objects = new ArrayList<LocationObject>();
 //        mTimer.start();
         objectTypes = new HashMap<>();
+
     }
 
     public MyObservable getMyObservable() {
