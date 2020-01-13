@@ -39,6 +39,7 @@ import i_nav.INavClient;
 import i_nav.Location;
 import i_nav.LocationObject;
 import i_nav.LocationObjectVertex;
+import i_nav.Search;
 
 public class MainActivity extends AppCompatActivity implements Observer, AdapterView.OnItemSelectedListener {
 
@@ -412,6 +413,8 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             }
 
             locationMap.shortestPath = new ArrayList<Edge>();
+
+
             for (int i = 0; i < arr2.size(); i++) {// (Object obj : arr2) {
                 Object obj = arr2.get(i);
                 JSONObject jsonObject = (JSONObject) obj;
@@ -421,68 +424,14 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
                     int weight = Integer.parseInt(jsonObject.get("weight").toString());
                     String step = jsonObject.get("directions") != null ? jsonObject.get("directions").toString() : "";
                     Edge e = new Edge(v1, v2, weight);
-
-                    double deltaY = (e.v2().getY() - e.v1().getY());
-                    double deltaX = (e.v2().getX() - e.v1().getX());
-                    double dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-                    String from = "";
-                    if (allObjects.containsKey("" + e.v1().getObject_id())) {
-                        from = allObjects.get("" + e.v1().getObject_id()).getShort_name() + "#" + e.v1().getObject_id();
-                    } else {
-                        from = "" + e.v1().getObject_id();
-                    }
-                    String to = "";
-                    if (allObjects.containsKey("" + e.v2().getObject_id())) {
-                        to = allObjects.get("" + e.v2().getObject_id()).getShort_name() + "#" + e.v2().getObject_id();
-                    } else {
-                        to = "" + e.v2().getObject_id();
-                    }
-                    double angle = Math.atan(deltaY / deltaX);
-                    angle = angle * (180 / Math.PI);
-                    angle = Math.round(angle);
-
-                    String direction = "";
-
-                    if (deltaX > 0 && deltaY > 0) { // quadrant 1
-                        direction = "NE";
-                        angle = Math.abs(angle);
-                    } else if (deltaX < 0 && deltaY > 0) { // quadrant 2
-                        direction = "NW";
-                        angle = Math.abs(angle) + 270;
-                    } else if (deltaX < 0 && deltaY < 0) { // quadrant 3
-                        direction = "SW";
-                        angle = Math.abs(angle) + 180;
-                    } else if (deltaX > 0 && deltaY < 0) { // quadrant 4
-                        direction = "SE";
-                        angle = Math.abs(angle) + 90;
-                    } else if (deltaX == 0 && deltaY > 0) { // N
-                        direction = "N";
-                    } else if (deltaX == 0 && deltaY < 0) { // S
-                        direction = "S";
-                    } else if (deltaX > 0 && deltaY == 0) { // E
-                        direction = "E";
-                    } else if (deltaX < 0 && deltaY == 0) { // W
-                        direction = "W";
-                    }
-
-
-                    Log.i("###", "v1: " + e.v1().getX() + ", " + e.v1().getY() + "    v2: " + e.v2().getX() + ", " + e.v2().getY());
-
-                    String str = "Walk " + angle + " deg (" + direction + ") " +  Math.round(dist) + " ft. ";
-
-                    if (i == arr2.size() - 1) {
-                        str += "from " + from + ". Arrive at your destination, " + to + "";
-                    } else {
-                        str += "from " + from + " to " + to + "";
-                        str += ", turn";
-                    }
-                    str += ".";
-
-                    e.setStep(str);
                     locationMap.shortestPath.add(e);
                 }
             }
+
+            locationMap.shortestPath = Search.getDirections(locationMap.shortestPath, allObjects);
+            
+
+
             if (locationMap.shortestPath.size() > 0) {
                 return "success";
             } else {
