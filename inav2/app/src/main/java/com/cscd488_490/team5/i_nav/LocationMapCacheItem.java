@@ -3,8 +3,8 @@ package com.cscd488_490.team5.i_nav;
 import java.util.List;
 
 import i_nav.Edge;
-import i_nav.Location;
-import i_nav.LocationObject;
+import i_nav_model.Location;
+import i_nav_model.LocationObject;
 
 public class LocationMapCacheItem {
 

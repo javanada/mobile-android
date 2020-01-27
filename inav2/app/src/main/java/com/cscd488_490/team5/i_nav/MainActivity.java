@@ -36,8 +36,8 @@ import java.util.Observer;
 
 import i_nav.Edge;
 import i_nav.INavClient;
-import i_nav.Location;
-import i_nav.LocationObject;
+import i_nav_model.Location;
+import i_nav_model.LocationObject;
 import i_nav.LocationObjectVertex;
 import i_nav.Search;
 
@@ -155,9 +155,14 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
     @Override
     public void update(Observable o, Object arg) {
-        String details = (locationMap.locationCache.containsKey("" + currentLocation) && locationMap.locationCache.get("" + currentLocation).location != null) ? locationMap.locationCache.get("" + currentLocation).location.getLong_name() : "";
+        String details = "";
+        if ((locationMap.locationCache.containsKey("" + currentLocation) && locationMap.locationCache.get("" + currentLocation).location != null)) {
+            Location l = locationMap.locationCache.get("" + currentLocation).location;
+            details += l.getLong_name();
+            details += l.getJSONString();
+        }
 //        ((TextView) findViewById(R.id.textView)).setText(arg.toString());
-        ((TextView) findViewById(R.id.textView)).setText(details + " - " + arg.toString());
+        ((TextView) findViewById(R.id.textView)).setText(details);
     }
 
 
