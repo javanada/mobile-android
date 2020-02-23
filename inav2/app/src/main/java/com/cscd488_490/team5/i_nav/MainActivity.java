@@ -228,9 +228,9 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
         if (fromObject != null && toObject != null) {
             progressBar.setVisibility(View.VISIBLE);
             progressBar.setProgress(0);
-            new GetPathTask().execute(from, to);
+            new AsyncTaskGetPath().execute(from, to);
         }
-        
+
     }
 
     public void onDirectionsListClick(View view) {
@@ -465,14 +465,14 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             }
 
 //            locationMap.invalidate();
-            new DownloadImageTask(locationMap).execute(locationMap.canvas_image);
+            new AsyncTaskDownloadImage(locationMap).execute(locationMap.canvas_image);
             // Do things like hide the progress bar or change a TextView
         }
     }
 
-    private class GetPathTask extends AsyncTask<String, Integer, String> {
+    private class AsyncTaskGetPath extends AsyncTask<String, Integer, String> {
 
-        public GetPathTask() {
+        public AsyncTaskGetPath() {
         }
 
         protected String doInBackground(String... strings) {
@@ -488,7 +488,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             locationMap.shortestPath = new ArrayList<Edge>();
 
 
-            for (int i = 0; i < arr2.size(); i++) {// (Object obj : arr2) {
+            for (int i = 0; i < arr2.size(); i++) {
                 Object obj = arr2.get(i);
                 JSONObject jsonObject = (JSONObject) obj;
                 if (jsonObject.get("v1") != null) {
@@ -537,9 +537,9 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
     }
 
-    private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
+    private class AsyncTaskDownloadImage extends AsyncTask<String, Void, Bitmap> {
         ImageView bmImage;
-        public DownloadImageTask(ImageView bmImage) {
+        public AsyncTaskDownloadImage(ImageView bmImage) {
             this.bmImage = bmImage;
         }
 
