@@ -30,7 +30,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -44,18 +43,18 @@ import i_nav.Search;
 public class MainActivity extends AppCompatActivity implements Observer, AdapterView.OnItemSelectedListener {
 
     private LocationMap locationMap;
-
     List<StringWithTag> locationOptions;
     List<StringWithTag> fromOptions;
     List<StringWithTag> toOptions;
     ArrayAdapter<StringWithTag> dataAdapter;
     ArrayAdapter<StringWithTag> dataAdapterFrom;
     ArrayAdapter<StringWithTag> dataAdapterTo;
-
     String currentLocation = "1";
-
     private ProgressBar progressBar;
     Integer count = 1;
+
+    private LocationObject fromObject;
+    private LocationObject toObject;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,7 +100,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
 
 
-        new MyTaskLocations().execute("1");
+        new AsyncTaskGetLocations().execute("1");
     }
 
     @Override
@@ -123,7 +122,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
                 progressBar.setProgress(0);
 
                 currentLocation = tag.toString();
-                new MyTask().execute(tag.toString());
+                new AsyncTaskGetLocationObjectsAndEdges().execute(tag.toString());
 
             }
         } catch (Exception e) {
@@ -165,17 +164,73 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
         ((TextView) findViewById(R.id.textView)).setText(details);
     }
 
+    public void onSetToClick(View view) {
+        TextView tview = (TextView) findViewById(R.id.directionsTextStatus);
 
-    public void onDirectionsMapClick(View view) {
+        // set fromObject to value of spinner
+        Spinner spinnerTo = (Spinner)findViewById(R.id.to_spinner);
+        String from = ((StringWithTag)spinnerTo.getSelectedItem()).tag.toString();
+        for (LocationObject o : locationMap.objects) {
+            if (o.getObject_id() == Integer.parseInt(from)) {
+                toObject = o;
+            }
+        }
+
+        String str = "";
+        if (this.fromObject != null) {
+            str += "From " + fromObject.getLocation_id() + " " + fromObject.getShort_name();
+        }
+        if (this.toObject != null) {
+            str += " to " + toObject.getLocation_id() + " " + toObject.getShort_name();
+        }
+
+        tview.setText(str);
+    }
+
+    public void onSetFromClick(View view) {
+        TextView tview = (TextView) findViewById(R.id.directionsTextStatus);
+
+        // set toObject to value of spinner
         Spinner spinnerFrom = (Spinner)findViewById(R.id.from_spinner);
         String from = ((StringWithTag)spinnerFrom.getSelectedItem()).tag.toString();
+        for (LocationObject o : locationMap.objects) {
+            if (o.getObject_id() == Integer.parseInt(from)) {
+                fromObject = o;
+            }
+        }
 
-        Spinner spinnerTo = (Spinner)findViewById(R.id.to_spinner);
-        String to = ((StringWithTag)spinnerTo.getSelectedItem()).tag.toString();
 
-        progressBar.setVisibility(View.VISIBLE);
-        progressBar.setProgress(0);
-        new GetPathTask().execute(from, to);
+        String str = "";
+        if (this.fromObject != null) {
+            str += "From " + fromObject.getLocation_id() + " " + fromObject.getShort_name();
+        }
+        if (this.toObject != null) {
+            str += " to " + toObject.getLocation_id() + " " + toObject.getShort_name();
+        }
+
+        tview.setText(str);
+    }
+
+    public void onDirectionsMapClick(View view) {
+//        Spinner spinnerFrom = (Spinner)findViewById(R.id.from_spinner);
+//        String from = ((StringWithTag)spinnerFrom.getSelectedItem()).tag.toString();
+//        Spinner spinnerTo = (Spinner)findViewById(R.id.to_spinner);
+//        String to = ((StringWithTag)spinnerTo.getSelectedItem()).tag.toString();
+
+        String from = null;
+        if (fromObject != null) {
+            from = "" + fromObject.getObject_id();
+        }
+        String to = null;
+        if (toObject != null) {
+            from = "" + toObject.getObject_id();
+        }
+        if (fromObject != null && toObject != null) {
+            progressBar.setVisibility(View.VISIBLE);
+            progressBar.setProgress(0);
+            new GetPathTask().execute(from, to);
+        }
+        
     }
 
     public void onDirectionsListClick(View view) {
@@ -199,10 +254,10 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
     }
 
-    public class MyTaskLocations extends AsyncTask<String, Integer, String> {
+    public class AsyncTaskGetLocations extends AsyncTask<String, Integer, String> {
 
         //Constructor
-        private MyTaskLocations() {
+        private AsyncTaskGetLocations() {
         }
 
         @Override
@@ -256,10 +311,10 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
 
 
-    public class MyTask extends AsyncTask<String, Integer, String> {
+    public class AsyncTaskGetLocationObjectsAndEdges extends AsyncTask<String, Integer, String> {
 
         //Constructor
-        private MyTask() {
+        private AsyncTaskGetLocationObjectsAndEdges() {
         }
 
         @Override
@@ -324,6 +379,19 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
                     }
                 }
                 LocationObject o = new LocationObject(jsonObject);
+
+//                JSONArray sibling_gatewaysArr = (JSONArray) jsonObject.get("sibling_gateways");
+//                for (Object sibling_gatewaysObj : sibling_gatewaysArr) {
+//                    JSONArray sibling_gatewaysArr2 = (JSONArray)sibling_gatewaysObj;
+//                    for (Object sibling_gatewaysObj2 : sibling_gatewaysArr2) {
+//                        JSONObject jsonsibling_gatewaysObj = (JSONObject) sibling_gatewaysObj2;
+//                        LocationObject sibling_gatewaysLocationObject = new LocationObject(jsonsibling_gatewaysObj);
+//                        StringWithTag stringWithTag = new StringWithTag(" - linked (" + sibling_gatewaysLocationObject.getLocation_id() + "): " + sibling_gatewaysLocationObject.getShort_name(), sibling_gatewaysLocationObject.getObject_id());
+//                        toOptions.add(stringWithTag);
+//                    }
+//                }
+
+
                 locationMap.objects.add(o);
                 StringWithTag stringWithTag = new StringWithTag(o.getShort_name(), o.getObject_id());
                 fromOptions.add(stringWithTag);
@@ -332,7 +400,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
                 if (jsonObject.get("location") != null) {
                     JSONObject j2 = (JSONObject) jsonObject.get("location");
                     Log.i("!!! j2", j2.toJSONString());
-                    locationMap.canvas_image = j2.get("canvas_image").toString();
+                    locationMap.canvas_image = j2.get("canvas_image") != null ? j2.get("canvas_image").toString() : "";
                     item.canvas_image = locationMap.canvas_image;
                 }
             }
