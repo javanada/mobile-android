@@ -63,6 +63,17 @@
                 android:padding="10dp"
                 android:text="TextView" />
 
+
+            <TextView
+                android:id="@+id/directionsTextStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:padding="10dp"
+                android:text="TextView" />
+
+
             <RelativeLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -76,9 +87,16 @@
                     android:text="From:" />
                 <Spinner
                     android:id="@+id/from_spinner"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_toRightOf="@id/from"/>
+                <Button
+                    android:id="@+id/buttonSetFrom"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@id/from_spinner"
+                    android:onClick="onSetFromClick"
+                    android:text="Set From" />
             </RelativeLayout>
 
             <RelativeLayout
@@ -94,9 +112,34 @@
                     android:text="To:" />
                 <Spinner
                     android:id="@+id/to_spinner"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_toRightOf="@id/to"/>
+                <Button
+                    android:id="@+id/buttonSetTo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@id/to_spinner"
+                    android:onClick="onSetToClick"
+                    android:text="Set To" />
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                >
+                <TextView
+                    android:id="@+id/accessibility_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="10dp"
+                    android:text="Accessible: " />
+                <CheckBox
+                    android:id="@+id/accessibility_checkbox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@id/accessibility_text"/>
             </RelativeLayout>
 
             <Button
@@ -114,6 +157,13 @@
                 android:enabled="false"
                 android:onClick="onDirectionsListClick"
                 android:text="Directions (List)" />
+            <Button
+                android:id="@+id/buttonPrintCache"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:enabled="true"
+                android:onClick="printCache"
+                android:text="Cache (Debug)" />
 
         </LinearLayout>
     </ScrollView>

@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.media.ThumbnailUtils;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -23,7 +24,9 @@ import android.widget.Toast;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,23 +35,26 @@ import java.util.Observer;
 
 import i_nav.Edge;
 import i_nav.INavClient;
-import i_nav.Location;
-import i_nav.LocationObject;
+import i_nav_model.Location;
+import i_nav_model.LocationObject;
 import i_nav.LocationObjectVertex;
+import i_nav.Search;
 
 public class MainActivity extends AppCompatActivity implements Observer, AdapterView.OnItemSelectedListener {
 
     private LocationMap locationMap;
-
     List<StringWithTag> locationOptions;
     List<StringWithTag> fromOptions;
     List<StringWithTag> toOptions;
     ArrayAdapter<StringWithTag> dataAdapter;
     ArrayAdapter<StringWithTag> dataAdapterFrom;
     ArrayAdapter<StringWithTag> dataAdapterTo;
-
+    String currentLocation = "1";
     private ProgressBar progressBar;
     Integer count = 1;
+
+    private LocationObject fromObject;
+    private LocationObject toObject;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
         setContentView(R.layout.activity_main);
 
         locationMap = (LocationMap) findViewById(R.id.locationMap);
+
         locationMap.getMyObservable().addObserver(this);
 
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
@@ -91,7 +98,9 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
         progressBar.setVisibility(View.VISIBLE);
         progressBar.setProgress(0);
 
-        new MyTaskLocations().execute("1");
+
+
+        new AsyncTaskGetLocations().execute("1");
     }
 
     @Override
@@ -103,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             Object tag = ((StringWithTag) parent.getItemAtPosition(position)).tag;
 
             // Showing selected spinner item
-            Toast.makeText(parent.getContext(), "Selected: " + item, Toast.LENGTH_SHORT).show();
+//            Toast.makeText(parent.getContext(), "Selected: " + item, Toast.LENGTH_SHORT).show();
 
             //        Log.i("!!!", "" + view.getId() + " " + (parent.getId() == R.id.spinner) + " parent: " + parent.getId());
             if (parent.getId() == R.id.spinner) {
@@ -112,7 +121,9 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
                 progressBar.setVisibility(View.VISIBLE);
                 progressBar.setProgress(0);
 
-                new MyTask().execute(tag.toString());
+                currentLocation = tag.toString();
+                new AsyncTaskGetLocationObjectsAndEdges().execute(tag.toString());
+
             }
         } catch (Exception e) {
             Log.e("!!!", "Error: " + e.getMessage());
@@ -143,19 +154,83 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
     @Override
     public void update(Observable o, Object arg) {
-        ((TextView) findViewById(R.id.textView)).setText(arg.toString());
+        String details = "";
+        if ((locationMap.locationCache.containsKey("" + currentLocation) && locationMap.locationCache.get("" + currentLocation).location != null)) {
+            Location l = locationMap.locationCache.get("" + currentLocation).location;
+            details += l.getLong_name();
+            details += l.getJSONString();
+        }
+//        ((TextView) findViewById(R.id.textView)).setText(arg.toString());
+        ((TextView) findViewById(R.id.textView)).setText(details);
+    }
+
+    public void onSetToClick(View view) {
+        TextView tview = (TextView) findViewById(R.id.directionsTextStatus);
+
+        // set fromObject to value of spinner
+        Spinner spinnerTo = (Spinner)findViewById(R.id.to_spinner);
+        String from = ((StringWithTag)spinnerTo.getSelectedItem()).tag.toString();
+        for (LocationObject o : locationMap.objects) {
+            if (o.getObject_id() == Integer.parseInt(from)) {
+                toObject = o;
+            }
+        }
+
+        String str = "";
+        if (this.fromObject != null) {
+            str += "From " + fromObject.getLocation_id() + " " + fromObject.getShort_name();
+        }
+        if (this.toObject != null) {
+            str += " to " + toObject.getLocation_id() + " " + toObject.getShort_name();
+        }
+
+        tview.setText(str);
+    }
+
+    public void onSetFromClick(View view) {
+        TextView tview = (TextView) findViewById(R.id.directionsTextStatus);
+
+        // set toObject to value of spinner
+        Spinner spinnerFrom = (Spinner)findViewById(R.id.from_spinner);
+        String from = ((StringWithTag)spinnerFrom.getSelectedItem()).tag.toString();
+        for (LocationObject o : locationMap.objects) {
+            if (o.getObject_id() == Integer.parseInt(from)) {
+                fromObject = o;
+            }
+        }
+
+
+        String str = "";
+        if (this.fromObject != null) {
+            str += "From " + fromObject.getLocation_id() + " " + fromObject.getShort_name();
+        }
+        if (this.toObject != null) {
+            str += " to " + toObject.getLocation_id() + " " + toObject.getShort_name();
+        }
+
+        tview.setText(str);
     }
 
     public void onDirectionsMapClick(View view) {
-        Spinner spinnerFrom = (Spinner)findViewById(R.id.from_spinner);
-        String from = ((StringWithTag)spinnerFrom.getSelectedItem()).tag.toString();
+//        Spinner spinnerFrom = (Spinner)findViewById(R.id.from_spinner);
+//        String from = ((StringWithTag)spinnerFrom.getSelectedItem()).tag.toString();
+//        Spinner spinnerTo = (Spinner)findViewById(R.id.to_spinner);
+//        String to = ((StringWithTag)spinnerTo.getSelectedItem()).tag.toString();
 
-        Spinner spinnerTo = (Spinner)findViewById(R.id.to_spinner);
-        String to = ((StringWithTag)spinnerTo.getSelectedItem()).tag.toString();
+        String from = null;
+        if (fromObject != null) {
+            from = "" + fromObject.getObject_id();
+        }
+        String to = null;
+        if (toObject != null) {
+            from = "" + toObject.getObject_id();
+        }
+        if (fromObject != null && toObject != null) {
+            progressBar.setVisibility(View.VISIBLE);
+            progressBar.setProgress(0);
+            new AsyncTaskGetPath().execute(from, to);
+        }
 
-        progressBar.setVisibility(View.VISIBLE);
-        progressBar.setProgress(0);
-        new GetPathTask().execute(from, to);
     }
 
     public void onDirectionsListClick(View view) {
@@ -171,10 +246,18 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
         startActivityForResult(intent,  1);
     }
 
-    public class MyTaskLocations extends AsyncTask<String, Integer, String> {
+    public void printCache(View view) {
+        for (String s : locationMap.locationCache.keySet()) {
+            LocationMapCacheItem item = locationMap.locationCache.get(s);
+            Log.i("&&&", "key: " + s + " item: " + item.toString());
+        }
+
+    }
+
+    public class AsyncTaskGetLocations extends AsyncTask<String, Integer, String> {
 
         //Constructor
-        private MyTaskLocations() {
+        private AsyncTaskGetLocations() {
         }
 
         @Override
@@ -188,6 +271,14 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
                 Location location = new Location(jsonObject);
                 StringWithTag stringWithTag = new StringWithTag(location.getShort_name(), location.getLocation_id());
                 locationOptions.add(stringWithTag);
+
+
+                if (locationMap.locationCache.containsKey("" + location.getLocation_id())) {
+                    locationMap.locationCache.get("" + location.getLocation_id()).location = location;
+                } else {
+                    locationMap.locationCache.put("" + location.getLocation_id(), new LocationMapCacheItem());
+                    locationMap.locationCache.get("" + location.getLocation_id()).location = location;
+                }
             }
             publishProgress(count++);
 
@@ -220,10 +311,10 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
 
 
-    public class MyTask extends AsyncTask<String, Integer, String> {
+    public class AsyncTaskGetLocationObjectsAndEdges extends AsyncTask<String, Integer, String> {
 
         //Constructor
-        private MyTask() {
+        private AsyncTaskGetLocationObjectsAndEdges() {
         }
 
         @Override
@@ -239,14 +330,16 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             if (locationMap.locationCache == null) {
                 locationMap.locationCache = new HashMap<>();
             } else {
-                if (locationMap.locationCache.containsKey(strings[0])) {
+                if (locationMap.locationCache.containsKey(strings[0]) && locationMap.locationCache.get(strings[0]).objects != null) {
                     LocationMapCacheItem cacheItem = locationMap.locationCache.get(strings[0]);
+
                     for (LocationObject locationObject : cacheItem.objects) {
                         locationMap.objects.add(locationObject);
                         StringWithTag stringWithTag = new StringWithTag(locationObject.getShort_name(), locationObject.getObject_id());
                         fromOptions.add(stringWithTag);
                         toOptions.add(stringWithTag);
                     }
+
                     for (Edge edge : cacheItem.edges) {
                         locationMap.edges.add(edge);
                     }
@@ -254,8 +347,9 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
                     return "success";
                 }
             }
-            locationMap.locationCache.put(strings[0], item);
-
+            if (!locationMap.locationCache.containsKey(strings[0])) {
+                locationMap.locationCache.put(strings[0], item);
+            }
 
 
             Log.i("!!!", "strings[0]: " + strings[0]);
@@ -269,7 +363,35 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
             for (Object obj : arr) {
                 JSONObject jsonObject = (JSONObject) obj;
+                if (jsonObject.get("object_type") != null) {
+                    JSONObject jsonObjectType = ((JSONObject)jsonObject.get("object_type"));
+                    if (jsonObjectType.get("image") != null && !locationMap.objectTypes.containsKey(jsonObjectType.get("object_type_id").toString())) {
+                        String image = jsonObjectType.get("image").toString();
+                        Log.i("!!!", "CREATING BITMAP...........");
+                        try {
+                            URL url = new URL(image);
+                            Bitmap bmp = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+                            Bitmap bmp2 = ThumbnailUtils.extractThumbnail(bmp, 25, 25);
+                            locationMap.objectTypes.put(jsonObjectType.get("object_type_id").toString(), bmp2);
+                        } catch(IOException e) {
+                            System.out.println(e);
+                        }
+                    }
+                }
                 LocationObject o = new LocationObject(jsonObject);
+
+//                JSONArray sibling_gatewaysArr = (JSONArray) jsonObject.get("sibling_gateways");
+//                for (Object sibling_gatewaysObj : sibling_gatewaysArr) {
+//                    JSONArray sibling_gatewaysArr2 = (JSONArray)sibling_gatewaysObj;
+//                    for (Object sibling_gatewaysObj2 : sibling_gatewaysArr2) {
+//                        JSONObject jsonsibling_gatewaysObj = (JSONObject) sibling_gatewaysObj2;
+//                        LocationObject sibling_gatewaysLocationObject = new LocationObject(jsonsibling_gatewaysObj);
+//                        StringWithTag stringWithTag = new StringWithTag(" - linked (" + sibling_gatewaysLocationObject.getLocation_id() + "): " + sibling_gatewaysLocationObject.getShort_name(), sibling_gatewaysLocationObject.getObject_id());
+//                        toOptions.add(stringWithTag);
+//                    }
+//                }
+
+
                 locationMap.objects.add(o);
                 StringWithTag stringWithTag = new StringWithTag(o.getShort_name(), o.getObject_id());
                 fromOptions.add(stringWithTag);
@@ -278,7 +400,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
                 if (jsonObject.get("location") != null) {
                     JSONObject j2 = (JSONObject) jsonObject.get("location");
                     Log.i("!!! j2", j2.toJSONString());
-                    locationMap.canvas_image = j2.get("canvas_image").toString();
+                    locationMap.canvas_image = j2.get("canvas_image") != null ? j2.get("canvas_image").toString() : "";
                     item.canvas_image = locationMap.canvas_image;
                 }
             }
@@ -343,14 +465,14 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             }
 
 //            locationMap.invalidate();
-            new DownloadImageTask(locationMap).execute(locationMap.canvas_image);
+            new AsyncTaskDownloadImage(locationMap).execute(locationMap.canvas_image);
             // Do things like hide the progress bar or change a TextView
         }
     }
 
-    private class GetPathTask extends AsyncTask<String, Integer, String> {
+    private class AsyncTaskGetPath extends AsyncTask<String, Integer, String> {
 
-        public GetPathTask() {
+        public AsyncTaskGetPath() {
         }
 
         protected String doInBackground(String... strings) {
@@ -358,19 +480,31 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             JSONArray arr2 = INavClient.get("path/shortest-source-dest/?source_object_id=" + strings[0] + "&dest_object_id=" + strings[1]);
             System.out.println("!!! arr2: " + arr2);
 
+            HashMap<String, LocationObject> allObjects = new HashMap<String, LocationObject>();
+            for (LocationObject locationObject : locationMap.objects) {
+                allObjects.put("" + locationObject.getObject_id(), locationObject);
+            }
+
             locationMap.shortestPath = new ArrayList<Edge>();
-            for (Object obj : arr2) {
+
+
+            for (int i = 0; i < arr2.size(); i++) {
+                Object obj = arr2.get(i);
                 JSONObject jsonObject = (JSONObject) obj;
                 if (jsonObject.get("v1") != null) {
-                    LocationObjectVertex v1 = new LocationObjectVertex((JSONObject)jsonObject.get("v1"));
-                    LocationObjectVertex v2 = new LocationObjectVertex((JSONObject)jsonObject.get("v2"));
+                    LocationObjectVertex v1 = new LocationObjectVertex((JSONObject) jsonObject.get("v1"));
+                    LocationObjectVertex v2 = new LocationObjectVertex((JSONObject) jsonObject.get("v2"));
                     int weight = Integer.parseInt(jsonObject.get("weight").toString());
                     String step = jsonObject.get("directions") != null ? jsonObject.get("directions").toString() : "";
                     Edge e = new Edge(v1, v2, weight);
-                    e.setStep(step);
                     locationMap.shortestPath.add(e);
                 }
             }
+
+            locationMap.shortestPath = Search.getDirections(locationMap.shortestPath, allObjects);
+            
+
+
             if (locationMap.shortestPath.size() > 0) {
                 return "success";
             } else {
@@ -403,9 +537,9 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
     }
 
-    private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
+    private class AsyncTaskDownloadImage extends AsyncTask<String, Void, Bitmap> {
         ImageView bmImage;
-        public DownloadImageTask(ImageView bmImage) {
+        public AsyncTaskDownloadImage(ImageView bmImage) {
             this.bmImage = bmImage;
         }
 
