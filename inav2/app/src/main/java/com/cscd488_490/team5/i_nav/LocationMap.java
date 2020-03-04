@@ -11,19 +11,13 @@ import android.graphics.Path;
 import android.graphics.PointF;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.MotionEvent;
-import android.view.View;
-
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Observable;
-
 import i_nav.Edge;
-import i_nav_model.Location;
 import i_nav_model.LocationObject;
 
 public class LocationMap extends AppCompatImageView implements TimeAnimator.TimeListener {
@@ -308,15 +302,21 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
         }
 
         for (Edge e : shortestPath) {
-            int startX = primaryImageX + (int) (e.v1().getX() / x_scale) + (currentWidth - imageWidth) / 2 - 120; // 120 for admin offset
-            int startY = primaryImageY + (int) (e.v1().getY() / y_scale);
-            int endX = primaryImageX + (int) (e.v2().getX() / x_scale) + (currentWidth - imageWidth) / 2 - 120; // 120 for admin offset
-            int endY = primaryImageY + (int) (e.v2().getY() / y_scale);
 
-            paint.setColor(Color.BLUE);
-            paint.setStrokeWidth(5);
+            if (objects.size() > 0 && e.v1().getLocation_id() == objects.get(objects.size() - 1).getLocation_id() &&
+                    e.v2().getLocation_id() == objects.get(objects.size() - 1).getLocation_id()
+            ) {
+                int startX = primaryImageX + (int) (e.v1().getX() / x_scale) + (currentWidth - imageWidth) / 2 - 120; // 120 for admin offset
+                int startY = primaryImageY + (int) (e.v1().getY() / y_scale);
+                int endX = primaryImageX + (int) (e.v2().getX() / x_scale) + (currentWidth - imageWidth) / 2 - 120; // 120 for admin offset
+                int endY = primaryImageY + (int) (e.v2().getY() / y_scale);
+
+                paint.setColor(Color.BLUE);
+                paint.setStrokeWidth(5);
 //            canvas.drawLine(startX, currentHeight - startY, endX, currentHeight - endY, paint);
-            canvas.drawLine(startX, startY, endX, endY, paint);
+                canvas.drawLine(startX, startY, endX, endY, paint);
+            }
+
         }
 
         paint.setColor(Color.BLUE);

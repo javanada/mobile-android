@@ -20,10 +20,8 @@ import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -32,7 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
-
 import i_nav.Edge;
 import i_nav.INavClient;
 import i_nav_model.Location;
@@ -43,6 +40,9 @@ import i_nav.Search;
 public class MainActivity extends AppCompatActivity implements Observer, AdapterView.OnItemSelectedListener {
 
     private LocationMap locationMap;
+    private List<Integer> maps;
+    private int currentMapIdIndex = 0;
+
     List<StringWithTag> locationOptions;
     List<StringWithTag> fromOptions;
     List<StringWithTag> toOptions;
@@ -61,7 +61,9 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        locationMap = (LocationMap) findViewById(R.id.locationMap);
+        locationMap = findViewById(R.id.locationMap);
+        maps = new ArrayList<>();
+
 
         locationMap.getMyObservable().addObserver(this);
 
@@ -116,6 +118,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
             //        Log.i("!!!", "" + view.getId() + " " + (parent.getId() == R.id.spinner) + " parent: " + parent.getId());
             if (parent.getId() == R.id.spinner) {
+                // get new location
                 Log.i("!!!", "GET NEW LOCATION");
 
                 progressBar.setVisibility(View.VISIBLE);
@@ -178,10 +181,10 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
         String str = "";
         if (this.fromObject != null) {
-            str += "From " + fromObject.getLocation_id() + " " + fromObject.getShort_name();
+            str += "From " + fromObject.getLocation_id() + "#" + fromObject.getObject_id() + " " + fromObject.getShort_name();
         }
         if (this.toObject != null) {
-            str += " to " + toObject.getLocation_id() + " " + toObject.getShort_name();
+            str += " to " + toObject.getLocation_id() + "#" + toObject.getObject_id() +" " + toObject.getShort_name();
         }
 
         tview.setText(str);
@@ -202,10 +205,10 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
         String str = "";
         if (this.fromObject != null) {
-            str += "From " + fromObject.getLocation_id() + " " + fromObject.getShort_name();
+            str += "From " + fromObject.getLocation_id() + "#" + fromObject.getObject_id() + " " + fromObject.getShort_name();
         }
         if (this.toObject != null) {
-            str += " to " + toObject.getLocation_id() + " " + toObject.getShort_name();
+            str += " to " + toObject.getLocation_id() + "#" + toObject.getObject_id() +" " + toObject.getShort_name();
         }
 
         tview.setText(str);
@@ -223,13 +226,16 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
         }
         String to = null;
         if (toObject != null) {
-            from = "" + toObject.getObject_id();
+            to = "" + toObject.getObject_id();
         }
+        Log.i("!!!", "trying to get path for...... from: " + from + " and to: " + to);
+
         if (fromObject != null && toObject != null) {
             progressBar.setVisibility(View.VISIBLE);
             progressBar.setProgress(0);
             new AsyncTaskGetPath().execute(from, to);
         }
+
 
     }
 
@@ -252,6 +258,31 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             Log.i("&&&", "key: " + s + " item: " + item.toString());
         }
 
+    }
+
+    public void onBackClick(View view) {
+
+        if (currentMapIdIndex == 0) {
+
+        } else {
+            currentMapIdIndex--;
+            Log.i("!!!", "GET NEW LOCATION");
+            progressBar.setVisibility(View.VISIBLE);
+            progressBar.setProgress(0);
+            new AsyncTaskGetLocationObjectsAndEdges().execute("" + maps.get(currentMapIdIndex));
+        }
+    }
+
+    public void onForwardClick(View view) {
+        if (currentMapIdIndex < maps.size() - 1) {
+            currentMapIdIndex++;
+            Log.i("!!!", "GET NEW LOCATION");
+            progressBar.setVisibility(View.VISIBLE);
+            progressBar.setProgress(0);
+            new AsyncTaskGetLocationObjectsAndEdges().execute("" + maps.get(currentMapIdIndex));
+        } else {
+
+        }
     }
 
     public class AsyncTaskGetLocations extends AsyncTask<String, Integer, String> {
@@ -320,9 +351,11 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
         @Override
         protected String doInBackground(String... strings) {
 
+            Log.i("!!!", "------- calling AsyncTaskGetLocationObjectsAndEdges strings[0]: " + strings[0]);
+
             locationMap.objects.clear();
             locationMap.edges.clear();
-            locationMap.shortestPath.clear();
+            //locationMap.shortestPath.clear();
             fromOptions.clear();
             toOptions.clear();
 
@@ -467,6 +500,11 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 //            locationMap.invalidate();
             new AsyncTaskDownloadImage(locationMap).execute(locationMap.canvas_image);
             // Do things like hide the progress bar or change a TextView
+
+            Log.i("!!!", "currentMapIdIndex: " + currentMapIdIndex);
+            for (int i = 0; i < maps.size(); i++) {
+                Log.i("!!!", "maps: " + i + ": " + maps.get(i));
+            }
         }
     }
 
@@ -497,12 +535,32 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
                     int weight = Integer.parseInt(jsonObject.get("weight").toString());
                     String step = jsonObject.get("directions") != null ? jsonObject.get("directions").toString() : "";
                     Edge e = new Edge(v1, v2, weight);
+
                     locationMap.shortestPath.add(e);
+
+                    if (!maps.contains(v1.getLocation_id())) {
+                        maps.add(v1.getLocation_id());
+                    }
+                    if (!maps.contains(v2.getLocation_id())) {
+                        maps.add(v2.getLocation_id());
+                    }
+
+
                 }
             }
 
+
+
+            for (int i = 0; i < maps.size(); i++) {
+                Log.i("!!!", "maps: " + i + ": " + maps.get(i));
+                if (locationMap.objects.get(locationMap.objects.size() - 1).getLocation_id() == maps.get(i)) {
+                    currentMapIdIndex = i;
+                }
+            }
+            Log.i("!!!", "currentMapIdIndex: " + currentMapIdIndex);
+
             locationMap.shortestPath = Search.getDirections(locationMap.shortestPath, allObjects);
-            
+
 
 
             if (locationMap.shortestPath.size() > 0) {
