@@ -30,18 +30,15 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
 
     // cache
     Map<String, LocationMapCacheItem> locationCache = new HashMap<>();
-    Map<String, PathCacheItem> pathCache = new HashMap<>();
 
     int primaryX;
     int primaryY;
     int secondaryX;
     int secondaryY;
-
     int primaryImageX;
     int primaryImageY;
     int secondaryImageX;
     int secondaryImageY;
-
     int currentLocationX;
     int currentLocationY;
     int beaconRadius = 1;
@@ -56,28 +53,12 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
     int currentWidth;
     int currentHeight;
 
-    private static long TIMER_MSEC = 200;
+    private static long TIMER_MSEC = 400;
     TimeAnimator mTimer;
     private long mLastTime;
 
     Map<String, Bitmap> objectTypes;
 
-    // Touch Events
-    private static final String TAG = "&&&-Touch";
-    // These matrices will be used to move and zoom image
-    Matrix matrix = new Matrix();
-    Matrix savedMatrix = new Matrix();
-
-    // We can be in one of these 3 states
-    static final int NONE = 0;
-    static final int DRAG = 1;
-    static final int ZOOM = 2;
-    int mode = NONE;
-
-    // Remember some things for zooming
-    PointF start = new PointF();
-    PointF mid = new PointF();
-    float oldDist = 1f;
 
     @Override
     public void onTimeUpdate(TimeAnimator timeAnimator, long l, long l1) {
@@ -108,7 +89,6 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
 
     public void initialize() {
 
-        set(3, 20, 55);
         myObservable = new MyObservable();
 
         mTimer = new TimeAnimator();
@@ -120,33 +100,6 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
 //        mTimer.start();
         objectTypes = new HashMap<>();
 
-
-//        matrix.setTranslate(1f, 1f);
-//        setImageMatrix(matrix);
-//        setScaleType(ScaleType.MATRIX);
-//
-//        this.setOnTouchListener(new OnTouchListener() {
-//            @Override
-//            public boolean onTouch(View v, MotionEvent event) {
-//
-//                Log.i(TAG, "onTouch");
-//
-//                if (event.getAction() == MotionEvent.ACTION_UP){
-//                    return true;
-//                } else if (event.getAction() == MotionEvent.ACTION_DOWN) {
-//                    savedMatrix.set(matrix);
-//                    start.set(event.getX(), event.getY());
-//                    Log.d(TAG, "mode=DRAG");
-//                    mode = DRAG;
-//                    setImageMatrix(matrix);
-//                    return true;
-//                }
-//
-//                return false;
-//            }
-//        });
-
-
     }
 
     @Override
@@ -155,29 +108,10 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
         return true;
     }
 
-
-
-        public MyObservable getMyObservable() {
+    public MyObservable getMyObservable() {
         return myObservable;
     }
 
-    public int getHour() {
-        return hour;
-    }
-
-    public int getMinute() {
-        return minute;
-    }
-
-    public int getSecond() {
-        return second;
-    }
-
-    public void set(int hour, int minute, int second) {
-        this.hour = hour;
-        this.minute = minute;
-        this.second = second;
-    }
 
     int parentWidth;
     int imageWidth;
@@ -217,13 +151,7 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
 //        canvas.scale(scaleFactorWidth, scaleFactorHeight);
 
 
-        GregorianCalendar gregorianCalendar = new GregorianCalendar();
-        int hourVal = gregorianCalendar.get(GregorianCalendar.HOUR_OF_DAY);
-        int minuteVal = gregorianCalendar.get(GregorianCalendar.MINUTE);
-        int secondVal = gregorianCalendar.get(GregorianCalendar.SECOND);
-        set(hourVal, minuteVal, secondVal);
-
-        myObservable.setTime(hourVal, minuteVal, secondVal);
+        myObservable.setTime();
 
 
         canvas.drawARGB(0, 255, 255, 255);
@@ -329,41 +257,16 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
 
     public class MyObservable extends Observable {
 
-        public MyObservable() {
-
+        MyObservable() {
         }
 
-        public void setTime(int hour, int minute, int second) {
+        void setTime() {
 
-            String str = "";
-            if (hour < 10) {
-                str += "0" + hour;
-            } else {
-                str += hour;
-            }
-            str += ":";
-            if (minute < 10) {
-                str += "0" + minute;
-            } else {
-                str += minute;
-            }
-            str += ":";
-            if (second < 10) {
-                str += "0" + second;
-            } else {
-                str += second;
-            }
             setChanged();
-            notifyObservers(str);
+            notifyObservers("");
 
         }
 
-        public int getHour() {
-            return 0;
-        }
     }
-
-
-
 
 }

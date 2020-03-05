@@ -15,6 +15,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
@@ -44,15 +45,15 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
     private List<Integer> maps;
     private int currentMapIdIndex = 0;
 
-    List<StringWithTag> locationOptions;
-    List<StringWithTag> fromOptions;
-    List<StringWithTag> toOptions;
-    ArrayAdapter<StringWithTag> dataAdapter;
-    ArrayAdapter<StringWithTag> dataAdapterFrom;
-    ArrayAdapter<StringWithTag> dataAdapterTo;
-    String currentLocation = "1";
+    private List<StringWithTag> locationOptions;
+    private List<StringWithTag> fromOptions;
+    private List<StringWithTag> toOptions;
+    private ArrayAdapter<StringWithTag> dataAdapter;
+    private ArrayAdapter<StringWithTag> dataAdapterFrom;
+    private ArrayAdapter<StringWithTag> dataAdapterTo;
+    private String currentLocation = "1";
     private ProgressBar progressBar;
-    Integer count = 1;
+    private Integer count = 1;
 
     private LocationObject fromObject;
     private LocationObject toObject;
@@ -69,7 +70,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
         progressBar = findViewById(R.id.progressBar);
         progressBar.getProgressDrawable().setColorFilter(Color.RED, android.graphics.PorterDuff.Mode.SRC_IN);
-        progressBar.setMax(10);
+        progressBar.setMax(4);
 
         // Location Selector
         Spinner spinner = findViewById(R.id.locationSpinner);
@@ -99,12 +100,10 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
         spinnerFrom.setAdapter(dataAdapterFrom);
         spinnerTo.setAdapter(dataAdapterTo);
 
+
         progressBar.setVisibility(View.VISIBLE);
-        progressBar.setProgress(0);
-
-
-
-        new AsyncTaskGetLocations().execute("1");
+        progressBar.setProgress(1);
+        new AsyncTaskGetLocations().execute();
     }
 
     @Override
@@ -116,7 +115,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             if (parent.getId() == R.id.locationSpinner) {
 
                 progressBar.setVisibility(View.VISIBLE);
-                progressBar.setProgress(0);
+                progressBar.setProgress(1);
 
                 currentLocation = tag.toString();
                 new AsyncTaskGetLocationObjectsAndEdges().execute(tag.toString());
@@ -227,7 +226,13 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
         if (fromObject != null && toObject != null) {
             progressBar.setVisibility(View.VISIBLE);
             progressBar.setProgress(0);
-            new AsyncTaskGetPath().execute(from, to);
+
+            boolean accessible = false;
+            CheckBox accessibleChooser = findViewById(R.id.accessibility_checkbox);
+            if (accessibleChooser.isChecked()) {
+                accessible = true;
+            }
+            new AsyncTaskGetPath().execute(from, to, "" + accessible);
         }
     }
 
@@ -328,11 +333,8 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             if (dataAdapter != null) {
                 dataAdapter.notifyDataSetChanged();
             }
-
         }
     }
-
-
 
     public class AsyncTaskGetLocationObjectsAndEdges extends AsyncTask<String, Integer, String> {
 
@@ -350,6 +352,8 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             //locationMap.shortestPath.clear();
             fromOptions.clear();
             toOptions.clear();
+
+            publishProgress(count++);
 
             LocationMapCacheItem item = new LocationMapCacheItem();
             if (locationMap.locationCache == null) {
@@ -379,6 +383,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             }
 
             JSONArray arr = INavClient.get("objects/location/" + strings[0]);
+            publishProgress(count++);
 
             if (arr.size() == 0) {
                 return null;
@@ -423,6 +428,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             item.objects.addAll(locationMap.objects);
 
             JSONArray arr2 = INavClient.get("edges/location/" + strings[0]);
+            publishProgress(count++);
 
             for (Object obj : arr2) {
                 JSONObject jsonObject = (JSONObject) obj;
@@ -488,7 +494,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
         protected String doInBackground(String... strings) {
 
-            JSONArray arr2 = INavClient.get("path/shortest-source-dest/?source_object_id=" + strings[0] + "&dest_object_id=" + strings[1]);
+            JSONArray arr2 = INavClient.get("path/shortest-source-dest/?source_object_id=" + strings[0] + "&dest_object_id=" + strings[1] + "&accessible=" + strings[2]);
             System.out.println("!!! arr2: " + arr2);
 
             HashMap<String, LocationObject> allObjects = new HashMap<>();
