@@ -12,8 +12,7 @@ import android.graphics.PointF;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.MotionEvent;
-import android.view.View;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
@@ -21,9 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Observable;
-
 import i_nav.Edge;
-import i_nav_model.Location;
 import i_nav_model.LocationObject;
 
 public class LocationMap extends AppCompatImageView implements TimeAnimator.TimeListener {
@@ -34,27 +31,24 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
     List<Edge> shortestPath;
     String canvas_image;
 
+    List<Integer> maps;
+    int currentMapIdIndex = 0;
+
     // cache
     Map<String, LocationMapCacheItem> locationCache = new HashMap<>();
-    Map<String, PathCacheItem> pathCache = new HashMap<>();
 
     int primaryX;
     int primaryY;
     int secondaryX;
     int secondaryY;
-
     int primaryImageX;
     int primaryImageY;
     int secondaryImageX;
     int secondaryImageY;
-
     int currentLocationX;
     int currentLocationY;
     int beaconRadius = 1;
 
-    private int hour;
-    private int minute;
-    private int second;
     public MyObservable myObservable;
 
     static final double radius = 600;
@@ -62,28 +56,12 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
     int currentWidth;
     int currentHeight;
 
-    private static long TIMER_MSEC = 200;
+    private static long TIMER_MSEC = 400;
     TimeAnimator mTimer;
     private long mLastTime;
 
     Map<String, Bitmap> objectTypes;
 
-    // Touch Events
-    private static final String TAG = "&&&-Touch";
-    // These matrices will be used to move and zoom image
-    Matrix matrix = new Matrix();
-    Matrix savedMatrix = new Matrix();
-
-    // We can be in one of these 3 states
-    static final int NONE = 0;
-    static final int DRAG = 1;
-    static final int ZOOM = 2;
-    int mode = NONE;
-
-    // Remember some things for zooming
-    PointF start = new PointF();
-    PointF mid = new PointF();
-    float oldDist = 1f;
 
     @Override
     public void onTimeUpdate(TimeAnimator timeAnimator, long l, long l1) {
@@ -114,7 +92,6 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
 
     public void initialize() {
 
-        set(3, 20, 55);
         myObservable = new MyObservable();
 
         mTimer = new TimeAnimator();
@@ -126,32 +103,7 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
 //        mTimer.start();
         objectTypes = new HashMap<>();
 
-
-//        matrix.setTranslate(1f, 1f);
-//        setImageMatrix(matrix);
-//        setScaleType(ScaleType.MATRIX);
-//
-//        this.setOnTouchListener(new OnTouchListener() {
-//            @Override
-//            public boolean onTouch(View v, MotionEvent event) {
-//
-//                Log.i(TAG, "onTouch");
-//
-//                if (event.getAction() == MotionEvent.ACTION_UP){
-//                    return true;
-//                } else if (event.getAction() == MotionEvent.ACTION_DOWN) {
-//                    savedMatrix.set(matrix);
-//                    start.set(event.getX(), event.getY());
-//                    Log.d(TAG, "mode=DRAG");
-//                    mode = DRAG;
-//                    setImageMatrix(matrix);
-//                    return true;
-//                }
-//
-//                return false;
-//            }
-//        });
-
+        maps = new ArrayList<>();
 
     }
 
@@ -161,29 +113,10 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
         return true;
     }
 
-
-
-        public MyObservable getMyObservable() {
+    public MyObservable getMyObservable() {
         return myObservable;
     }
 
-    public int getHour() {
-        return hour;
-    }
-
-    public int getMinute() {
-        return minute;
-    }
-
-    public int getSecond() {
-        return second;
-    }
-
-    public void set(int hour, int minute, int second) {
-        this.hour = hour;
-        this.minute = minute;
-        this.second = second;
-    }
 
     int parentWidth;
     int imageWidth;
@@ -223,13 +156,7 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
 //        canvas.scale(scaleFactorWidth, scaleFactorHeight);
 
 
-        GregorianCalendar gregorianCalendar = new GregorianCalendar();
-        int hourVal = gregorianCalendar.get(GregorianCalendar.HOUR_OF_DAY);
-        int minuteVal = gregorianCalendar.get(GregorianCalendar.MINUTE);
-        int secondVal = gregorianCalendar.get(GregorianCalendar.SECOND);
-        set(hourVal, minuteVal, secondVal);
-
-        myObservable.setTime(hourVal, minuteVal, secondVal);
+        myObservable.setTime();
 
 
         canvas.drawARGB(0, 255, 255, 255);
@@ -308,15 +235,21 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
         }
 
         for (Edge e : shortestPath) {
-            int startX = primaryImageX + (int) (e.v1().getX() / x_scale) + (currentWidth - imageWidth) / 2 - 120; // 120 for admin offset
-            int startY = primaryImageY + (int) (e.v1().getY() / y_scale);
-            int endX = primaryImageX + (int) (e.v2().getX() / x_scale) + (currentWidth - imageWidth) / 2 - 120; // 120 for admin offset
-            int endY = primaryImageY + (int) (e.v2().getY() / y_scale);
 
-            paint.setColor(Color.BLUE);
-            paint.setStrokeWidth(5);
+            if (objects.size() > 0 && e.v1().getLocation_id() == objects.get(objects.size() - 1).getLocation_id() &&
+                    e.v2().getLocation_id() == objects.get(objects.size() - 1).getLocation_id()
+            ) {
+                int startX = primaryImageX + (int) (e.v1().getX() / x_scale) + (currentWidth - imageWidth) / 2 - 120; // 120 for admin offset
+                int startY = primaryImageY + (int) (e.v1().getY() / y_scale);
+                int endX = primaryImageX + (int) (e.v2().getX() / x_scale) + (currentWidth - imageWidth) / 2 - 120; // 120 for admin offset
+                int endY = primaryImageY + (int) (e.v2().getY() / y_scale);
+
+                paint.setColor(Color.BLUE);
+                paint.setStrokeWidth(5);
 //            canvas.drawLine(startX, currentHeight - startY, endX, currentHeight - endY, paint);
-            canvas.drawLine(startX, startY, endX, endY, paint);
+                canvas.drawLine(startX, startY, endX, endY, paint);
+            }
+
         }
 
         paint.setColor(Color.BLUE);
@@ -325,45 +258,21 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
         currentLocationY = primaryImageY + 20;
         canvas.drawCircle(currentLocationX + (currentWidth - imageWidth) / 2, this.currentHeight - currentLocationY, Math.abs(beaconRadius), paint);
 
+
     }
 
     public class MyObservable extends Observable {
 
-        public MyObservable() {
-
+        MyObservable() {
         }
 
-        public void setTime(int hour, int minute, int second) {
+        void setTime() {
 
-            String str = "";
-            if (hour < 10) {
-                str += "0" + hour;
-            } else {
-                str += hour;
-            }
-            str += ":";
-            if (minute < 10) {
-                str += "0" + minute;
-            } else {
-                str += minute;
-            }
-            str += ":";
-            if (second < 10) {
-                str += "0" + second;
-            } else {
-                str += second;
-            }
             setChanged();
-            notifyObservers(str);
+            notifyObservers("");
 
         }
 
-        public int getHour() {
-            return 0;
-        }
     }
-
-
-
 
 }
