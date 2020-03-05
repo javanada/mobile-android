@@ -68,7 +68,7 @@
                     android:padding="10dp"
                     android:text="Location:" />
                 <Spinner
-                    android:id="@+id/spinner"
+                    android:id="@+id/locationSpinner"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toRightOf="@id/textView2"/>
