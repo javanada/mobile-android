@@ -47,11 +47,18 @@
                     android:onClick="onBackClick"
                     android:visibility="visible"
                     android:text=" Back " />
+                <TextView
+                    android:id="@+id/text_directions_location_pager"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="10dp"
+                    android:layout_toRightOf="@id/buttonBack"
+                    android:text=" - " />
                 <Button
                     android:id="@+id/buttonForward"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_toRightOf="@id/buttonBack"
+                    android:layout_toRightOf="@id/text_directions_location_pager"
                     android:onClick="onForwardClick"
                     android:visibility="visible"
                     android:text=" Forward " />
@@ -82,7 +89,7 @@
                 android:layout_gravity="center"
                 android:gravity="center"
                 android:padding="10dp"
-                android:text="TextView" />
+                android:text="" />
 
 
             <TextView
@@ -92,7 +99,7 @@
                 android:layout_gravity="center"
                 android:gravity="center"
                 android:padding="10dp"
-                android:text="TextView" />
+                android:text="" />
 
 
             <RelativeLayout

@@ -11,6 +11,9 @@ import android.graphics.Path;
 import android.graphics.PointF;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.widget.TextView;
+
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -28,6 +31,9 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
     List<Edge> shortestPath;
     String canvas_image;
 
+    List<Integer> maps;
+    int currentMapIdIndex = 0;
+
     // cache
     Map<String, LocationMapCacheItem> locationCache = new HashMap<>();
 
@@ -43,9 +49,6 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
     int currentLocationY;
     int beaconRadius = 1;
 
-    private int hour;
-    private int minute;
-    private int second;
     public MyObservable myObservable;
 
     static final double radius = 600;
@@ -99,6 +102,8 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
         objects = new ArrayList<LocationObject>();
 //        mTimer.start();
         objectTypes = new HashMap<>();
+
+        maps = new ArrayList<>();
 
     }
 
@@ -252,6 +257,7 @@ public class LocationMap extends AppCompatImageView implements TimeAnimator.Time
         currentLocationX = primaryImageX + 20;
         currentLocationY = primaryImageY + 20;
         canvas.drawCircle(currentLocationX + (currentWidth - imageWidth) / 2, this.currentHeight - currentLocationY, Math.abs(beaconRadius), paint);
+
 
     }
 

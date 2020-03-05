@@ -42,9 +42,6 @@ import i_nav.Search;
 public class MainActivity extends AppCompatActivity implements Observer, AdapterView.OnItemSelectedListener {
 
     private LocationMap locationMap;
-    private List<Integer> maps;
-    private int currentMapIdIndex = 0;
-
     private List<StringWithTag> locationOptions;
     private List<StringWithTag> fromOptions;
     private List<StringWithTag> toOptions;
@@ -64,7 +61,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
         setContentView(R.layout.activity_main);
 
         locationMap = findViewById(R.id.locationMap);
-        maps = new ArrayList<>();
+
 
         locationMap.getMyObservable().addObserver(this);
 
@@ -165,6 +162,24 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             locationDetails += "\n" + l.getDescription();
         }
         ((TextView) findViewById(R.id.textView)).setText(locationDetails);
+
+
+        String locationPager = "";
+        for (int i = 0; i < locationMap.maps.size(); i++) {
+            Log.i("!!!", "maps: " + i + ": " + locationMap.maps.get(i));
+            if (locationMap.objects.size() > 0 && locationMap.objects.get(locationMap.objects.size() - 1).getLocation_id() == locationMap.maps.get(i)) {
+                locationMap.currentMapIdIndex = i;
+                locationPager += " [" + locationMap.maps.get(i) + "] ";
+            } else {
+                locationPager += " " + locationMap.maps.get(i) + " ";
+            }
+        }
+        TextView directionsLocationsPagerTextView = findViewById(R.id.text_directions_location_pager);
+        if (directionsLocationsPagerTextView != null) {
+            directionsLocationsPagerTextView.setText(locationPager);
+        } else {
+            Log.i("!!!", " ------ directionsLocationsPagerTextView null -----");
+        }
     }
 
     public void onSetToClick(View view) {
@@ -262,22 +277,22 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
     public void onBackClick(View view) {
 
-        if (currentMapIdIndex > 0) {
-            currentMapIdIndex--;
+        if (locationMap.currentMapIdIndex > 0) {
+            locationMap.currentMapIdIndex--;
             Log.i("onBackClick", "Attempting to get previous location in directions");
             progressBar.setVisibility(View.VISIBLE);
             progressBar.setProgress(0);
-            new AsyncTaskGetLocationObjectsAndEdges().execute("" + maps.get(currentMapIdIndex));
+            new AsyncTaskGetLocationObjectsAndEdges().execute("" + locationMap.maps.get(locationMap.currentMapIdIndex));
         }
     }
 
     public void onForwardClick(View view) {
-        if (currentMapIdIndex < maps.size() - 1) {
-            currentMapIdIndex++;
+        if (locationMap.currentMapIdIndex < locationMap.maps.size() - 1) {
+            locationMap.currentMapIdIndex++;
             Log.i("onForwardClick", "Attempting to get next location in directions");
             progressBar.setVisibility(View.VISIBLE);
             progressBar.setProgress(0);
-            new AsyncTaskGetLocationObjectsAndEdges().execute("" + maps.get(currentMapIdIndex));
+            new AsyncTaskGetLocationObjectsAndEdges().execute("" + locationMap.maps.get(locationMap.currentMapIdIndex));
         }
     }
 
@@ -480,10 +495,13 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
             new AsyncTaskDownloadImage(locationMap).execute(locationMap.canvas_image);
             // Do things like hide the progress bar or change a TextView
 
-            Log.i("!!!", "currentMapIdIndex: " + currentMapIdIndex);
-            for (int i = 0; i < maps.size(); i++) {
-                Log.i("!!!", "maps: " + i + ": " + maps.get(i));
+            for (int i = 0; i < locationMap.maps.size(); i++) {
+                Log.i("!!!", "maps: " + i + ": " + locationMap.maps.get(i));
+                if (locationMap.objects.get(locationMap.objects.size() - 1).getLocation_id() == locationMap.maps.get(i)) {
+                    locationMap.currentMapIdIndex = i;
+                }
             }
+            Log.i("!!!", "currentMapIdIndex: " + locationMap.currentMapIdIndex);
         }
     }
 
@@ -517,23 +535,23 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
                     locationMap.shortestPath.add(e);
 
-                    if (!maps.contains(v1.getLocation_id())) {
-                        maps.add(v1.getLocation_id());
+                    if (!locationMap.maps.contains(v1.getLocation_id())) {
+                        locationMap.maps.add(v1.getLocation_id());
                     }
-                    if (!maps.contains(v2.getLocation_id())) {
-                        maps.add(v2.getLocation_id());
+                    if (!locationMap.maps.contains(v2.getLocation_id())) {
+                        locationMap.maps.add(v2.getLocation_id());
                     }
 
                 }
             }
 
-            for (int i = 0; i < maps.size(); i++) {
-                Log.i("!!!", "maps: " + i + ": " + maps.get(i));
-                if (locationMap.objects.get(locationMap.objects.size() - 1).getLocation_id() == maps.get(i)) {
-                    currentMapIdIndex = i;
+            for (int i = 0; i < locationMap.maps.size(); i++) {
+                Log.i("!!!", "maps: " + i + ": " + locationMap.maps.get(i));
+                if (locationMap.objects.get(locationMap.objects.size() - 1).getLocation_id() == locationMap.maps.get(i)) {
+                    locationMap.currentMapIdIndex = i;
                 }
             }
-            Log.i("!!!", "currentMapIdIndex: " + currentMapIdIndex);
+            Log.i("!!!", "currentMapIdIndex: " + locationMap.currentMapIdIndex);
 
 //            locationMap.shortestPath = Search.getDirections(locationMap.shortestPath, allObjects);
             Search.getDirections(locationMap.shortestPath, allObjects);
@@ -557,7 +575,7 @@ public class MainActivity extends AppCompatActivity implements Observer, Adapter
 
             progressBar.setVisibility(View.GONE);
             count = 1;
-            Button btn = (Button) findViewById(R.id.buttonDirectionsList);
+            Button btn = findViewById(R.id.buttonDirectionsList);
 
             if (result == null) {
                 btn.setEnabled(false);
