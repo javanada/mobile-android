@@ -40,13 +40,16 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 >
+
                 <Button
                     android:id="@+id/buttonBack"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:backgroundTint="#0B3C5D"
                     android:onClick="onBackClick"
-                    android:visibility="visible"
-                    android:text=" Back " />
+                    android:text=" Back "
+                    android:textColor="#FFFFFF"
+                    android:visibility="visible" />
                 <TextView
                     android:id="@+id/text_directions_location_pager"
                     android:layout_width="wrap_content"
@@ -54,14 +57,17 @@
                     android:padding="10dp"
                     android:layout_toRightOf="@id/buttonBack"
                     android:text=" - " />
+
                 <Button
                     android:id="@+id/buttonForward"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_toRightOf="@id/text_directions_location_pager"
+                    android:backgroundTint="#0B3C5D"
                     android:onClick="onForwardClick"
-                    android:visibility="visible"
-                    android:text=" Forward " />
+                    android:text=" Forward "
+                    android:textColor="#FFFFFF"
+                    android:visibility="visible" />
             </RelativeLayout>
             <RelativeLayout
                 android:layout_width="wrap_content"
@@ -74,11 +80,14 @@
                     android:layout_height="wrap_content"
                     android:padding="10dp"
                     android:text="Location:" />
+
                 <Spinner
                     android:id="@+id/locationSpinner"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toRightOf="@id/textView2"/>
+                    android:layout_alignTop="@id/textView2"
+                    android:layout_alignBottom="@id/textView2"
+                    android:layout_toRightOf="@id/textView2" />
             </RelativeLayout>
 
 
@@ -107,24 +116,30 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 >
+
                 <TextView
                     android:id="@+id/from"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="10dp"
                     android:text="From:" />
+
                 <Spinner
                     android:id="@+id/from_spinner"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_toRightOf="@id/from"/>
+                    android:layout_height="38dp"
+                    android:layout_marginLeft="0dp"
+                    android:layout_toRightOf="@id/from" />
+
                 <Button
                     android:id="@+id/buttonSetFrom"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_toRightOf="@id/from_spinner"
+                    android:backgroundTint="#0B3C5D"
                     android:onClick="onSetFromClick"
-                    android:text="Set From" />
+                    android:text="Set From"
+                    android:textColor="#FFFFFF" />
             </RelativeLayout>
 
             <RelativeLayout
@@ -138,18 +153,23 @@
                     android:layout_height="wrap_content"
                     android:padding="10dp"
                     android:text="To:" />
+
                 <Spinner
                     android:id="@+id/to_spinner"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_toRightOf="@id/to"/>
+                    android:layout_height="38dp"
+                    android:layout_marginLeft="0dp"
+                    android:layout_toRightOf="@id/to" />
+
                 <Button
                     android:id="@+id/buttonSetTo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_toRightOf="@id/to_spinner"
+                    android:backgroundTint="#0B3C5D"
                     android:onClick="onSetToClick"
-                    android:text="Set To" />
+                    android:text="Set To"
+                    android:textColor="#FFFFFF" />
             </RelativeLayout>
 
             <RelativeLayout
